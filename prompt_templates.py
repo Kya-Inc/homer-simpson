@@ -19,4 +19,8 @@ COMBINED_TEMPLATE="""{main}
 """
 
 
+
+PERSONALITY_TEMPLATE = ""
+
+
 EXAMPLE_TEMPLATE = "Person: {prompt}\nHomer: {response}"

@@ -11,16 +11,17 @@ from langchain.prompts import PromptTemplate, FewShotPromptTemplate
 from homer_example_selector import HomerExampleSelector
 
 from prompt_templates import MAIN_TEMPLATE, CONVERSATION_TEMPLATE, COMBINED_TEMPLATE, EXAMPLE_TEMPLATE
+from character_data import character_data
 
 if "sidebar_state" not in st.session_state:
     st.session_state.sidebar_state = "expanded"
 
 st.set_page_config(
-    page_title="Mimicking a Character via Few-Shot Priming without Explicit Instructions",
+    page_title="Mimicking a Character via Explicit and Implicit Instructions",
     initial_sidebar_state=st.session_state.sidebar_state,
 )
 st.title("Homer Simpson")
-st.caption("Mimicking a Character via Few-Shot Priming without Explicit Instructions")
+st.caption("Mimicking a Character via Explicit and Implicit Instructions")
 
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 
@@ -35,7 +36,7 @@ view_info = st.expander("What's this all about?", expanded=True)
 
 with view_info:
     """
-    This demonstrates how a pre-trained conversational model can learn to mimic a target character's speech patterns through few-shot learning, without any explicit instructions to imitate that particular character. By priming the model with only a set of relevant example dialogs retrieved via semantic similarity search, the system implicitly adopts the persona's tone and verbal quirks in a completely data-driven fashion, with no manual tuning or training tailored to the character. Remarkably, just a handful of representative dialog snippets provides all the information needed for the AI to convincingly mimic the character, without explicit instructions, modeling or modification.
+    This builds on a previous demonstration where we instructed a pre-trained model to mimic a character implicitly through semantically similar few-shot examples. In this demo, we will explore how to combine explicit instructions with implicit instructions to further improve the model's ability to mimic a character.
     """
 
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
@@ -59,7 +60,7 @@ examples_prompt = FewShotPromptTemplate(
     suffix="{human_input}",
 )
 
-main_prompt = PromptTemplate.from_template(MAIN_TEMPLATE)
+main_prompt = PromptTemplate.from_template(MAIN_TEMPLATE.format(**character_data))
 conversation_prompt = PromptTemplate.from_template(CONVERSATION_TEMPLATE)
 
 

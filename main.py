@@ -4,13 +4,16 @@ from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
-from langchain.prompts.pipeline import PipelinePromptTemplate
-from langchain.prompts import PromptTemplate, FewShotPromptTemplate
+from langchain.prompts import PromptTemplate, ChatPromptTemplate, FewShotChatMessagePromptTemplate, MessagesPlaceholder
 
+## chat model
+
+user_name="fielding"
+character_name="homer"
 
 from homer_example_selector import HomerExampleSelector
 
-from prompt_templates import MAIN_TEMPLATE, CONVERSATION_TEMPLATE, COMBINED_TEMPLATE, EXAMPLE_TEMPLATE
+from prompt_templates import MAIN_TEMPLATE, SYSTEM_NOTE_TEMPLATE, NSFW_TEMPLATE, TASK_TEMPLATE, EXAMPLES_PREFACE_TEMPLATE
 from character_data import character_data
 
 if "sidebar_state" not in st.session_state:
@@ -41,42 +44,38 @@ with view_info:
 
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 memory = ConversationBufferMemory(
-    chat_memory=msgs, ai_prefix="Homer", input_key="human_input"
-)
-
-
-
-
-example_prompt = PromptTemplate(
-    input_variables=["prompt", "response"], template=EXAMPLE_TEMPLATE
+    chat_memory=msgs, ai_prefix="Homer", human_prefix="Fielding", input_key="human_input", return_messages=True
 )
 
 example_selector = HomerExampleSelector()
 
-examples_prompt = FewShotPromptTemplate(
+examples_prompt = FewShotChatMessagePromptTemplate(
     example_selector=example_selector,
-    example_prompt=example_prompt,
+    example_prompt=ChatPromptTemplate.from_messages([
+        ("human", "{prompt}"),
+        ("ai", "{response}")
+    ]),
     input_variables=["human_input"],
-    suffix="{human_input}",
 )
 
+system_note_template = PromptTemplate.from_template(SYSTEM_NOTE_TEMPLATE)
+nsfw_template = PromptTemplate.from_template(NSFW_TEMPLATE)
 main_prompt = PromptTemplate.from_template(MAIN_TEMPLATE.format(**character_data))
-conversation_prompt = PromptTemplate.from_template(CONVERSATION_TEMPLATE)
 
+chat_prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM_NOTE_TEMPLATE),
+    ("system", NSFW_TEMPLATE),
+    ("system", MAIN_TEMPLATE.format(**character_data)),
+    ("system", EXAMPLES_PREFACE_TEMPLATE.format(user_name=user_name, character_name=character_name)),
+    examples_prompt,
+    ("system", TASK_TEMPLATE.format(character_name=character_name, user_name=user_name)),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{human_input}"),
+])
 
-combined_prompt = PromptTemplate.from_template(COMBINED_TEMPLATE)
-
-pipeline_prompt = PipelinePromptTemplate(
-    final_prompt=combined_prompt,
-    pipeline_prompts=[
-        ("main", main_prompt),
-        ("examples", examples_prompt),
-        ("conversation", conversation_prompt),
-    ],
-)
 llm_chain = LLMChain(
     llm=ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4"),
-    prompt=pipeline_prompt,
+    prompt=chat_prompt,
     memory=memory,
     verbose=True,
 )

@@ -8,8 +8,8 @@ from langchain.prompts import PromptTemplate, ChatPromptTemplate, FewShotChatMes
 
 ## chat model
 
-user_name="fielding"
-character_name="homer"
+user_name="Fielding"
+character_name="Homer"
 
 from homer_example_selector import HomerExampleSelector
 

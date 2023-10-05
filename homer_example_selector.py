@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from langchain.prompts.example_selector.base import BaseExampleSelector
+import streamlit as st
 
 # qdrant = QdrantClient(path="db")
 semantic_model = SentenceTransformer('thenlper/gte-large')
@@ -17,13 +18,14 @@ class HomerExampleSelector(BaseExampleSelector):
 
         """Select which examples to use based on the inputs."""
         examples = []
-        qdrant = QdrantClient(path="db")
+         
+        qdrant = QdrantClient(url=st.secrets.qdrant_url, api_key=st.secrets.qdrant_api_key)
 
         prompts  = qdrant.search(
           collection_name="prompts",
           query_vector=semantic_model.encode(input_variables.get("human_input")).tolist(),
           limit=10,
-          with_payload={"exclude": ["precontext", "postcontext", "prompting_character"]},
+          with_payload={"exclude": ["precontext", "postcontext"]},
           score_threshold=0.75
         )
 
